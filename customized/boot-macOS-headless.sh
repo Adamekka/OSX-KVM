@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+# https://learn.microsoft.com/en-us/xamarin/ios/get-started/installation/windows/connecting-to-mac/
+
 # Special thanks to:
 # https://github.com/Leoyzen/KVM-Opencore
 # https://github.com/thenickdude/KVM-Opencore/
@@ -18,17 +20,20 @@
 #
 # Note: Using RealVNC client, connect to `<localhost:5901>`.
 # E.g. `vncviewer localhost:5901`
+#
+# If using Nested-KVM (running macOS guest under a Ubuntu guest), use socat
+# and/or bridged network to exposed the macOS ports.
 
 ############################################################################
 # NOTE: Tweak the "MY_OPTIONS" line in case you are having booting problems!
 ############################################################################
 
-MY_OPTIONS="+ssse3,+sse4.2,+popcnt,+avx,+aes,+xsave,+xsaveopt,check"
+MY_OPTIONS="+ssse3,+sse4.2,+popcnt,+aes,+xsave,+xsaveopt,check"
 
 # This script works for Big Sur, Catalina, Mojave, and High Sierra. Tested with
 # macOS 10.15.6, macOS 10.14.6, and macOS 10.13.6.
 
-ALLOCATED_RAM="7192" # MiB
+ALLOCATED_RAM="4096" # MiB
 CPU_SOCKETS="1"
 CPU_CORES="2"
 CPU_THREADS="4"
@@ -38,16 +43,15 @@ OVMF_DIR="."
 
 # shellcheck disable=SC2054
 args=(
-  -enable-kvm -m "$ALLOCATED_RAM" -cpu Penryn,kvm=on,vendor=GenuineIntel,+invtsc,vmware-cpuid-freq=on,"$MY_OPTIONS"
+  -enable-kvm -m "$ALLOCATED_RAM" -cpu Penryn,kvm=on,vendor=GenuineIntel,vmware-cpuid-freq=on,"$MY_OPTIONS"
   -machine q35
   -usb -device usb-kbd -device usb-tablet
-  -smp "$CPU_THREADS",cores="$CPU_CORES",sockets="$CPU_SOCKETS"
+  -smp 2
   -device usb-ehci,id=ehci
   # -device usb-kbd,bus=ehci.0
   # -device usb-mouse,bus=ehci.0
   -device nec-usb-xhci,id=xhci
   -global nec-usb-xhci.msi=off
-  -global ICH9-LPC.acpi-pci-hotplug-with-bridge-support=off
   # -device usb-host,vendorid=0x8086,productid=0x0808  # 2 USD USB Sound Card
   # -device usb-host,vendorid=0x1b3f,productid=0x2008  # Another 2 USD USB Sound Card
   -device isa-applesmc,osk="ourhardworkbythesewordsguardedpleasedontsteal(c)AppleComputerInc"
@@ -61,7 +65,8 @@ args=(
   -drive id=InstallMedia,if=none,file="$REPO_PATH/BaseSystem.img",format=raw
   -drive id=MacHDD,if=none,file="$REPO_PATH/mac_hdd_ng.img",format=qcow2
   -device ide-hd,bus=sata.4,drive=MacHDD
-  -netdev user,id=net0,hostfwd=tcp::2222-:22 -device vmxnet3,netdev=net0,id=net0,mac=52:54:00:c9:18:27
+  # Note: Shift the host's ssh port some somewhere else!
+  -netdev user,id=net0,hostfwd=tcp::22-:22 -device vmxnet3,netdev=net0,id=net0,mac=52:54:00:c9:18:27
   -monitor stdio
   -device vmware-svga
   -display none

@@ -167,7 +167,7 @@ Phenom II X3 720 does not. Ryzen processors work just fine.
   ./OpenCore-Boot.sh
   ```
 
-  Note: This same script works for Big Sur, Catalina, Mojave, and High Sierra.
+  Note: This same script works for all recent macOS versions.
 
 - Use the `Disk Utility` tool within the macOS installer to partition, and
   format the virtual disk attached to the macOS VM.
